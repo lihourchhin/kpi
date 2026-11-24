@@ -1,76 +1,184 @@
-# KPI
-![DEMO](https://i.imgur.com/D9w8YF0.png)
+<div align="center">
 
-The Official package manager for KOOMPI & KRAMA OS
+# kpi
 
-## Objectives
+**The official package manager for KOOMPI OS & KRAMA OS**
 
-There a point that bring every package in one place.
+One place for every package: official repositories, the AUR, and Cambodian software.
 
-kpi is based on the design of [yaourt](https://github.com/archlinuxfr/yaourt), [apacman](https://github.com/oshazard/apacman), [pacaur](https://github.com/rmarquis/pacaur), [yay](https://github.com/Jguer/yay). We're arming to:
+[![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
+![Go](https://img.shields.io/badge/built%20with-Go-00ADD8?logo=go&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-Arch%20based-1793D1?logo=archlinux&logoColor=white)
 
-* Provide an interface for pacman
-* Yaourt-style interactive search/install
-* Minimal dependencies
-* Minimize user input
-* Know when git packages are due for upgrades
-* Combine all cambodia packages in one place
+![kpi demo](https://i.imgur.com/D9w8YF0.png)
 
+</div>
+
+---
+
+## Table of contents
+
+- [Why kpi](#why-kpi)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Building from source](#building-from-source)
+- [Project layout](#project-layout)
+- [Contributing](#contributing)
+- [Credits](#credits)
+- [License](#license)
+
+## Why kpi
+
+KOOMPI and KRAMA OS are built on Arch Linux. `kpi` wraps `pacman` and the AUR behind a single, friendly command so users never have to think about where a package comes from. It aims to:
+
+- Provide a simple interface on top of `pacman`
+- Offer Yaourt-style interactive search and install
+- Keep dependencies minimal and user prompts few
+- Know when `-git` packages are due for an upgrade
+- Bring Cambodian packages together in one place
 
 ## Features
 
-* Perform advanced dependency solving
-* Download PKGBUILDs from ABS or AUR
-* Tab-complete the AUR
-* Query user up-front for all input (prior to starting builds)
-* Narrow search terms (`kpi linux header` will first search `linux` and then narrow on `header`)
-* Find matching package providers during search and allow selection
-* Remove make dependencies at the end of the build process
-* Run without sourcing PKGBUILD
+- **Advanced dependency solving** across repositories and the AUR
+- **PKGBUILD download** from ABS or the AUR
+- **Tab completion** for bash, zsh and fish, including AUR package names
+- **Ask everything up front**: all questions are asked before any build starts
+- **Narrowing search**: `kpi linux header` searches `linux`, then narrows to `header`
+- **Provider selection** when several packages provide the same target
+- **Clean-up** of make dependencies after a build
+- **Safe parsing**: reads `.SRCINFO` and never sources a PKGBUILD
 
 ## Installation
 
-You may need to clone from our repo and some done : 
+### Requirements
+
+| Dependency   | Needed for          |
+| ------------ | ------------------- |
+| `git`        | runtime             |
+| `base-devel` | runtime (building)  |
+| `go`         | building only       |
+
+### Install
+
 ```sh
-git clone https://github.com/LyhourChhen/kpi.git
+sudo pacman -S --needed git base-devel go
+git clone https://github.com/lihourchhin/kpi.git
 cd kpi
-make 
+make
 sudo make install
 ```
 
-### Dependencies
+`make install` places the binary, man page and shell completions under `/usr/local`. Set `PREFIX` to change that:
 
-kpi depends on:
+```sh
+sudo make install PREFIX=/usr
+```
 
-* go (make only)
-* git
-* base-devel
+### Uninstall
 
-Note: kpi also depends on a few other projects (as vendored dependencies). These
-projects are stored in `vendor/`, are built into yay at build time, and do not
-need to be installed separately. These files are managed by
-[dep](https://github.com/golang/dep) and should not be modified manually.
+```sh
+sudo make uninstall
+```
 
-Following are the dependencies managed under dep:
+## Usage
 
-* https://github.com/Jguer/go-alpm
-* https://github.com/Morganamilo/go-srcinfo
-* https://github.com/Morganamilo/go-pacmanconf
-* https://github.com/mikkeloscar/aur
+### Everyday commands
 
-### Building
+| Command                | What it does                                    |
+| ---------------------- | ----------------------------------------------- |
+| `kpi <term>`           | Search and pick packages to install interactively |
+| `kpi -i <package>`     | Install a package                               |
+| `kpi -S <package>`     | Install a package (pacman style)                |
+| `kpi -R <package>`     | Remove a package                                |
+| `kpi`                  | Upgrade the whole system (repos + AUR)          |
+| `kpi -Ss <term>`       | Search repositories and the AUR                 |
+| `kpi -Qu`              | List available upgrades                         |
 
-Run `make` to build kpi. This command will generate a binary called `kpi` in
-the same directory as the Makefile.
+### kpi-specific operations
 
-Note: kpi's Makefile sources its dependencies from `vendor/`. When
-building manually, dependencies will instead be sourced from `GOPATH`. To
-build against `vendor/` you must specify `-mod=vendor` in the build command.
+| Command                | What it does                                    |
+| ---------------------- | ----------------------------------------------- |
+| `kpi -G <package>`     | Download a package's PKGBUILD                   |
+| `kpi -Ps`              | Show system package statistics                  |
+| `kpi -Pw`              | Print Arch Linux news                           |
+| `kpi -Yc`              | Remove unneeded dependencies                    |
+| `kpi -Y --gendb`       | Build the development-package database for `-git` upgrades |
+| `kpi -a <term>`        | Only target the AUR                             |
+| `kpi --repo <term>`    | Only target the official repositories           |
 
+Every standard `pacman` operation (`-D`, `-F`, `-Q`, `-T`, `-U`, …) is passed through unchanged.
 
-### Testing
+Full reference:
 
-Run `make test` to test kpi. This command will verify that the code is
-formatted correctly, run the code through `go vet`, and run unit tests.
+```sh
+kpi --help
+man kpi
+```
 
+## Configuration
 
+Add `--save` to any permanent option to store it in the config file:
+
+```sh
+kpi --editor nvim --sudoloop --save
+```
+
+| Command        | Shows                       |
+| -------------- | --------------------------- |
+| `kpi -Pg`      | Current configuration       |
+| `kpi -Pd`      | Default configuration       |
+
+Settings are stored as JSON in `$XDG_CONFIG_HOME/yay/config.json` (default `~/.config/yay/config.json`), and the cache lives in `~/.cache/yay`. These paths are inherited from yay and are shared with it.
+
+## Building from source
+
+```sh
+make          # build ./kpi
+make test     # gofmt check, go vet and unit tests
+make package  # build a release tarball: kpi_<version>_<arch>.tar.gz
+make clean    # remove build output
+```
+
+Override the version at build time with `make VERSION=0.1.0`.
+
+Third-party Go dependencies are vendored in `vendor/` and are built with `-mod=vendor`, so no network access is needed during the build. Do not edit files in `vendor/` by hand.
+
+| Vendored dependency                                                 | Purpose                    |
+| ------------------------------------------------------------------- | -------------------------- |
+| [jguer/go-alpm](https://github.com/Jguer/go-alpm)                   | libalpm (pacman) bindings  |
+| [Morganamilo/go-srcinfo](https://github.com/Morganamilo/go-srcinfo) | `.SRCINFO` parser          |
+| [Morganamilo/go-pacmanconf](https://github.com/Morganamilo/go-pacmanconf) | `pacman.conf` parser |
+| [mikkeloscar/aur](https://github.com/mikkeloscar/aur)               | AUR RPC client             |
+
+## Project layout
+
+```
+.
+├── main.go, cmd.go, parser.go   # entry point, CLI parsing and dispatch
+├── install.go, upgrade.go       # install and system-upgrade flows
+├── dep*.go                      # dependency resolution
+├── download.go, vcs.go          # PKGBUILD download and -git tracking
+├── query.go, print.go           # search and output
+├── completions/                 # bash, zsh and fish completions
+├── doc/                         # man page
+├── testdata/                    # fixtures for unit tests
+└── vendor/                      # vendored Go dependencies
+```
+
+## Contributing
+
+1. Fork the repository and create a branch: `git checkout -b feature/my-change`
+2. Make your change and run `make test`
+3. Commit with a clear message and open a pull request
+
+To report a bug, please open an issue and include the output of `kpi -V` and the exact command you ran.
+
+## Credits
+
+kpi is a fork of [yay](https://github.com/Jguer/yay) and draws on the design of [yaourt](https://github.com/archlinuxfr/yaourt), [apacman](https://github.com/oshazard/apacman) and [pacaur](https://github.com/rmarquis/pacaur). Thank you to their authors and contributors.
+
+## License
+
+kpi is free software released under the [GNU General Public License v3.0](LICENSE).
